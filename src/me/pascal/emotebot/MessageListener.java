@@ -22,8 +22,6 @@ public class MessageListener extends ListenerAdapter {
 
     if (content.startsWith("-emote")) {
       String[] arguments = content.substring(7).split(" ");
-      System.out.println(arguments.length);
-      System.out.println(arguments[0]);
 
       if (arguments.length == 2 && attachments.size() > 0
           && attachments.get(0).getFileName().matches("([^\\s]+(\\.(?i)(jpg|png|jpeg|gif))$)")) {
