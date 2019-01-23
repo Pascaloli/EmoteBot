@@ -21,12 +21,12 @@ public class Main {
 
   public void main() {
     try {
+      //paste your bot token here
       this.jda = new JDABuilder(AccountType.BOT)
           .setToken("")
           .addEventListener(new MessageListener()).build().awaitReady();
     } catch (LoginException | InterruptedException e) {
       e.printStackTrace();
-      System.exit(0);
     }
   }
 
