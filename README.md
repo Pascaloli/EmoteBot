@@ -7,9 +7,9 @@ JDA - https://github.com/DV8FromTheWorld/JDA
 
 
 # Usage
--emote <name> <width in icons> <attach a file or paste url ending with .png .jpg . jpeg or .gif>
+-emote (name) (width in emotes) (attach a file or paste url ending with .png .jpg . jpeg or .gif)
 
 
 # Supported file formats
-png jpg jpeg gif
+png, jpg, jpeg, gif
 
