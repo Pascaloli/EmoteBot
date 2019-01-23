@@ -2,14 +2,14 @@
 A simple Discord bot that converts images into emotes.
 
 
-#Requiemements:
+# Requiemements:
 JDA - https://github.com/DV8FromTheWorld/JDA
 
 
-#Usage
+# Usage
 -emote <name> <width in icons> <attach a file or paste url ending with .png .jpg . jpeg or .gif>
 
 
-#Supported file formats
+# Supported file formats
 png jpg jpeg gif
 
