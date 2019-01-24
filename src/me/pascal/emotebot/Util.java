@@ -4,7 +4,6 @@ import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
@@ -16,7 +15,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import javax.imageio.ImageIO;
 import javax.imageio.stream.ImageOutputStream;
 import me.pascal.emotebot.GifDecoder.GifImage;
-import net.dv8tion.jda.core.Permission;
 import net.dv8tion.jda.core.entities.Emote;
 import net.dv8tion.jda.core.entities.Guild;
 import net.dv8tion.jda.core.entities.Icon;
@@ -44,9 +42,10 @@ public class Util {
 
   public static void handleURL(String url, Message message, String name, int cols)
       throws MalformedURLException, IOException {
-    
+
     URLConnection openConnection = new URL(url).openConnection();
-    openConnection.addRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:25.0) Gecko/20100101 Firefox/25.0");
+    openConnection.addRequestProperty("User-Agent",
+        "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:25.0) Gecko/20100101 Firefox/25.0");
     InputStream is = openConnection.getInputStream();
 
     if (url.endsWith(".gif")) {
@@ -62,47 +61,42 @@ public class Util {
 
   private static void handleImage(BufferedImage image, Message message, String name, int cols) {
     // Determines the chunk width and height and amount
-    int width = image.getWidth() / cols;
-    int chunkWidth = width;
-    int chunkHeight = width;
-    int rows = ((Double.valueOf(image.getHeight()) / Double.valueOf(width)) % 1d == 0.0d)
-        ? image.getHeight() / width
-        : image.getHeight() / width + 1;
-    int chunks = rows * cols;
-    AtomicInteger count = new AtomicInteger(0);
+    try {
+      int width = image.getWidth() / cols;
+      int chunkWidth = width;
+      int chunkHeight = width;
+      int rows = ((Double.valueOf(image.getHeight()) / Double.valueOf(width)) % 1d == 0.0d)
+          ? image.getHeight() / width
+          : image.getHeight() / width + 1;
+      int chunks = rows * cols;
+      AtomicInteger count = new AtomicInteger(0);
 
-    if (!checks(message, chunks, cols, rows)) {
-      return;
-    }
-    handleEmoteSpace(message, chunks, false);
+      if (!checks(message, chunks, cols, rows)) {
+        return;
+      }
+      handleEmoteSpace(message, chunks, false);
 
-    message.getChannel().sendMessage("Image successfully loaded, starting to upload").queue();
+      message.getChannel().sendMessage("Image successfully loaded, starting to upload").queue();
 
-    BufferedImage imgs[] = new BufferedImage[chunks]; // Image array to store image chunks
-    StringBuilder b = new StringBuilder();
+      BufferedImage imgs[] = new BufferedImage[chunks]; // Image array to store image chunks
+      StringBuilder b = new StringBuilder();
 
-    for (int x = 0; x < rows; x++) {
-      for (int y = 0; y < cols; y++) {
-        // Initialize the image array with image chunks
-        imgs[count.get()] = new BufferedImage(chunkWidth, chunkHeight, BufferedImage.TYPE_INT_ARGB);
+      for (int x = 0; x < rows; x++) {
+        for (int y = 0; y < cols; y++) {
+          // Initialize the image array with image chunks
+          imgs[count.get()] =
+              new BufferedImage(chunkWidth, chunkHeight, BufferedImage.TYPE_INT_ARGB);
 
-        // Draws the image chunk
-        Graphics2D gr = imgs[count.get()].createGraphics();
-        gr.drawImage(image, 0, 0, chunkWidth, chunkHeight, chunkWidth * y, chunkHeight * x,
-            chunkWidth * y + chunkWidth, chunkHeight * x + chunkHeight, null);
-        gr.dispose();
+          // Draws the image chunk
+          Graphics2D gr = imgs[count.get()].createGraphics();
+          gr.drawImage(image, 0, 0, chunkWidth, chunkHeight, chunkWidth * y, chunkHeight * x,
+              chunkWidth * y + chunkWidth, chunkHeight * x + chunkHeight, null);
+          gr.dispose();
 
-        // Uploads the image chunk
-        ByteArrayOutputStream os = new ByteArrayOutputStream();
-        try {
+          // Uploads the image chunk
+          ByteArrayOutputStream os = new ByteArrayOutputStream();
           ImageIO.write(imgs[count.get()], "png", os);
-        } catch (IOException e) {
-          e.printStackTrace();
-          message.getChannel().sendMessage("Error occured, check console for more info.").queue();
-          return;
-        }
-        InputStream is = new ByteArrayInputStream(os.toByteArray());
-        try {
+          InputStream is = new ByteArrayInputStream(os.toByteArray());
           Emote emote = message.getGuild().getController()
               .createEmote(name + (count.get() + 1), Icon.from(is)).complete();
           b.append(":" + emote.getName() + ":");
@@ -111,15 +105,18 @@ public class Util {
           }
           message.getChannel()
               .sendMessage("Uploaded " + (count.get() + 1) + "/" + chunks + "chunks.").complete();
-        } catch (IOException e) {
-          e.printStackTrace();
-          message.getChannel().sendMessage("Error occured, check console for more info.").queue();
-          return;
+          count.incrementAndGet();
         }
-        count.incrementAndGet();
       }
+      message.getChannel().sendMessage("`" + b.toString() + "`").queue();
+    } catch (Exception e) {
+      message.getChannel()
+          .sendMessage(
+              "Error: " + e.getMessage() + " \n\nPlease contact me on twitter (@xImPascal)")
+          .queue();
+      e.printStackTrace();
+      return;
     }
-    message.getChannel().sendMessage("`" + b.toString() + "`").queue();
   }
 
   private static void handleGif(InputStream gifStream, Message message, String name, int cols) {
@@ -166,14 +163,7 @@ public class Util {
 
             // Uploads the image chunk
             ByteArrayOutputStream os = new ByteArrayOutputStream();
-            try {
-              ImageIO.write(imgs[i], "png", os);
-            } catch (IOException e) {
-              e.printStackTrace();
-              message.getChannel().sendMessage("Error occured, check console for more info.")
-                  .queue();
-              return;
-            }
+            ImageIO.write(imgs[i], "png", os);
           }
           pieces.add(imgs);
         }
@@ -196,42 +186,37 @@ public class Util {
         writer.close();
         ios.close();
 
-        InputStream is = new ByteArrayInputStream(baos.toByteArray());
-        try {
-          Emote emote = message.getGuild().getController()
-              .createEmote(name + (count + 1), Icon.from(is)).complete();
-          b.append(":" + emote.getName() + ":");
-          if ((count + 1) % cols == 0) {
-            b.append("\n");
-          }
-          message.getChannel().sendMessage("Uploaded " + (count + 1) + "/" + chunks + "chunks.")
-              .complete();
-        } catch (IOException e) {
-          e.printStackTrace();
-          message.getChannel().sendMessage("Error occured, check console for more info.").queue();
-          return;
+        if (baos.toByteArray().length > 256000) {
+          message.getChannel().sendMessage(
+              "Error occured, chunk is larger than 256kb. Please change emote width or image resolution")
+              .queue();
         }
+        InputStream is = new ByteArrayInputStream(baos.toByteArray());
+        Emote emote = message.getGuild().getController()
+            .createEmote(name + (count + 1), Icon.from(is)).complete();
+        b.append(":" + emote.getName() + ":");
+        if ((count + 1) % cols == 0) {
+          b.append("\n");
+        }
+        message.getChannel().sendMessage("Uploaded " + (count + 1) + "/" + chunks + "chunks.")
+            .complete();
         count++;
       }
 
       // upload emotes
       message.getChannel().sendMessage("`" + b.toString() + "`").queue();
 
-    } catch (IOException e) {
-      message.getChannel().sendMessage("Error: " + e.getMessage()).queue();
+    } catch (Exception e) {
+      message.getChannel()
+          .sendMessage(
+              "Error: " + e.getMessage() + " \n\nPlease contact me on twitter (@xImPascal)")
+          .queue();
       e.printStackTrace();
+      return;
     }
   }
 
   private static boolean checks(Message message, int chunks, int cols, int rows) {
-    // check permissions
-    if (!message.getGuild().getMember(message.getJDA().getSelfUser())
-        .hasPermission(Permission.MANAGE_EMOTES)) {
-      message.getChannel().sendMessage("Missing permission: " + Permission.MANAGE_EMOTES.getName())
-          .queue();;
-      return false;
-    }
-
     // check chunk amount
     if (chunks > MAX_EMOTES) {
       message.getChannel()
@@ -244,8 +229,9 @@ public class Util {
     return true;
   }
 
-  private static void handleEmoteSpace(Message message, int chunks, boolean animated) {
+  private static boolean handleEmoteSpace(Message message, int chunks, boolean animated) {
     Guild g = message.getGuild();
+
     int existent = (int) g.getEmotes().stream().filter(e -> e.isAnimated() == animated).count();
     int remaining = MAX_EMOTES - existent;
     if (remaining < chunks) {
@@ -255,6 +241,8 @@ public class Util {
       g.getEmotes().stream().filter(e -> e.isAnimated() == animated).limit(toRemove)
           .forEach(e -> e.delete().complete());
     }
+    return true;
+
   }
 
 
